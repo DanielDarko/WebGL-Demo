@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Unity Web Player | WebGL Demo</title>
+    <title>Unity Web Player | {{{ PRODUCT_NAME }}}</title>
     <link rel="shortcut icon" href="TemplateData/favicon.ico" />
     <link rel="stylesheet" href="TemplateData/style.css" />
     <style>
@@ -23,11 +23,13 @@
         width: 100%;
         height: 100%;
       }
+      /* NOTE: no width/height *attributes* on the canvas; only CSS sizing */
       #unity-canvas {
         width: 100%;
         height: 100%;
         background: #000;
         touch-action: none; /* extra safety */
+        display: block;
       }
       #unity-fullscreen-button {
         position: absolute;
@@ -40,14 +42,13 @@
         background: url('TemplateData/fullscreen-button.png') center center no-repeat;
         background-size: cover;
       }
-      #unity-footer {
-        display: none; /* Hide the footer to remove title and logo */
-      }
+      #unity-footer { display: none; }
     </style>
   </head>
   <body>
     <div id="unity-container" class="unity-desktop">
-      <canvas id="unity-canvas" width="1920" height="1080" tabindex="-1"></canvas>
+      <!-- Removed width="1920" height="1080" -->
+      <canvas id="unity-canvas" tabindex="-1"></canvas>
 
       <div id="unity-loading-bar">
         <div id="unity-logo"></div>
@@ -71,7 +72,6 @@
       document.addEventListener('touchstart', function (e) {
         if (e.target.closest('#unity-canvas')) e.preventDefault();
       }, { passive: false });
-
       document.addEventListener('touchmove', function (e) {
         if (e.target.closest('#unity-canvas')) e.preventDefault();
       }, { passive: false });
@@ -94,28 +94,36 @@
         updateBannerVisibility();
       }
 
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
       // Build paths & filenames injected by Unity at build time (no hard-coding)
       const buildUrl  = "Build";
-      const loaderUrl = buildUrl + "/b.loader.js";
+      const loaderUrl = buildUrl + "/{{{ LOADER_FILENAME }}}";
 
       const config = {
         arguments: [],
-        dataUrl:      buildUrl + "/b.data.unityweb",
-        frameworkUrl: buildUrl + "/b.framework.js.unityweb",
-        codeUrl:      buildUrl + "/b.wasm.unityweb",
+        dataUrl:      buildUrl + "/{{{ DATA_FILENAME }}}",
+        frameworkUrl: buildUrl + "/{{{ FRAMEWORK_FILENAME }}}",
+        codeUrl:      buildUrl + "/{{{ CODE_FILENAME }}}",
         streamingAssetsUrl: "StreamingAssets",
-        companyName: "JB Communications LTD",
-        productName: "WebGL Demo",
-        productVersion: "0.1.0",
-        showBanner: unityShowBanner
+        companyName: "{{{ COMPANY_NAME }}}",
+        productName: "{{{ PRODUCT_NAME }}}",
+        productVersion: "{{{ PRODUCT_VERSION }}}",
+        showBanner: unityShowBanner,
+
+        /* Mobile safety knobs */
+        // Keep the backbuffer reasonable on high-DPI phones
+        devicePixelRatio: isMobile ? 1 : Math.min(2, window.devicePixelRatio || 1),
+        // Let Unity keep the WebGL buffer in sync with CSS canvas size
+        matchWebGLToCanvasSize: true
       };
 
-      // Mobile adjustments (Unity default behavior)
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+      // Mobile viewport meta
+      if (isMobile) {
         const meta = document.createElement('meta');
         meta.name = 'viewport';
         meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
-        document.getElementsByTagName('head')[0].appendChild(meta);
+        document.head.appendChild(meta);
         document.querySelector("#unity-container").className = "unity-mobile";
         canvas.className = "unity-mobile";
       } else {
@@ -132,7 +140,7 @@
 
       loadingBar.style.display = "block";
 
-      // Load the Unity loader (filename determined by token)
+      // Load the Unity loader
       const script = document.createElement("script");
       script.src = loaderUrl;
       script.onload = () => {
@@ -141,11 +149,187 @@
         }).then((unityInstance) => {
           loadingBar.style.display = "none";
           fullscreenBtn.onclick = () => unityInstance.SetFullscreen(1);
+
+          // Helpful: show context lost errors instead of silent crashes
+          canvas.addEventListener("webglcontextlost", (e) => {
+            e.preventDefault();
+            unityShowBanner("WebGL context lost. The page may be out of memory. Try reloading.", "error");
+          }, false);
         }).catch((message) => {
-          alert(message);
+          // Surfaces common mobile issues (e.g., missing COOP/COEP when Threads are enabled)
+          unityShowBanner(message, "error");
         });
       };
-      script.onerror = (e) => {
+      script.onerror = () => {
+        unityShowBanner("Failed to load the Unity loader script.", "error");
+      };
+      document.body.appendChild(script);
+    </script>
+  </body>
+</html>
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Unity Web Player | {{{ PRODUCT_NAME }}}</title>
+    <link rel="shortcut icon" href="TemplateData/favicon.ico" />
+    <link rel="stylesheet" href="TemplateData/style.css" />
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        height: 100%;
+        width: 100%;
+        overscroll-behavior: none;
+        touch-action: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+      }
+      #unity-container {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+      /* NOTE: no width/height *attributes* on the canvas; only CSS sizing */
+      #unity-canvas {
+        width: 100%;
+        height: 100%;
+        background: #000;
+        touch-action: none; /* extra safety */
+        display: block;
+      }
+      #unity-fullscreen-button {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        cursor: pointer;
+        z-index: 10;
+        width: 40px;
+        height: 40px;
+        background: url('TemplateData/fullscreen-button.png') center center no-repeat;
+        background-size: cover;
+      }
+      #unity-footer { display: none; }
+    </style>
+  </head>
+  <body>
+    <div id="unity-container" class="unity-desktop">
+      <!-- Removed width="1920" height="1080" -->
+      <canvas id="unity-canvas" tabindex="-1"></canvas>
+
+      <div id="unity-loading-bar">
+        <div id="unity-logo"></div>
+        <div id="unity-progress-bar-empty">
+          <div id="unity-progress-bar-full"></div>
+        </div>
+      </div>
+
+      <div id="unity-warning"></div>
+      <div id="unity-fullscreen-button" title="Fullscreen"></div>
+    </div>
+
+    <script>
+      const canvas = document.querySelector("#unity-canvas");
+      const loadingBar = document.querySelector("#unity-loading-bar");
+      const progressBarFull = document.querySelector("#unity-progress-bar-full");
+      const warningBanner = document.querySelector("#unity-warning");
+      const fullscreenBtn = document.querySelector("#unity-fullscreen-button");
+
+      // Prevent iOS gestures from interfering with the canvas
+      document.addEventListener('touchstart', function (e) {
+        if (e.target.closest('#unity-canvas')) e.preventDefault();
+      }, { passive: false });
+      document.addEventListener('touchmove', function (e) {
+        if (e.target.closest('#unity-canvas')) e.preventDefault();
+      }, { passive: false });
+
+      function unityShowBanner(msg, type) {
+        function updateBannerVisibility() {
+          warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
+        }
+        const div = document.createElement('div');
+        div.innerHTML = msg;
+        if (type === 'error') div.style = 'background: red; padding: 10px;';
+        else {
+          if (type === 'warning') div.style = 'background: yellow; padding: 10px;';
+          setTimeout(function () {
+            warningBanner.removeChild(div);
+            updateBannerVisibility();
+          }, 5000);
+        }
+        warningBanner.appendChild(div);
+        updateBannerVisibility();
+      }
+
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+      // Build paths & filenames injected by Unity at build time (no hard-coding)
+      const buildUrl  = "Build";
+      const loaderUrl = buildUrl + "/{{{ LOADER_FILENAME }}}";
+
+      const config = {
+        arguments: [],
+        dataUrl:      buildUrl + "/{{{ DATA_FILENAME }}}",
+        frameworkUrl: buildUrl + "/{{{ FRAMEWORK_FILENAME }}}",
+        codeUrl:      buildUrl + "/{{{ CODE_FILENAME }}}",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "{{{ COMPANY_NAME }}}",
+        productName: "{{{ PRODUCT_NAME }}}",
+        productVersion: "{{{ PRODUCT_VERSION }}}",
+        showBanner: unityShowBanner,
+
+        /* Mobile safety knobs */
+        // Keep the backbuffer reasonable on high-DPI phones
+        devicePixelRatio: isMobile ? 1 : Math.min(2, window.devicePixelRatio || 1),
+        // Let Unity keep the WebGL buffer in sync with CSS canvas size
+        matchWebGLToCanvasSize: true
+      };
+
+      // Mobile viewport meta
+      if (isMobile) {
+        const meta = document.createElement('meta');
+        meta.name = 'viewport';
+        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
+        document.head.appendChild(meta);
+        document.querySelector("#unity-container").className = "unity-mobile";
+        canvas.className = "unity-mobile";
+      } else {
+        canvas.style.width = "100%";
+        canvas.style.height = "100%";
+      }
+
+      function resizeCanvas() {
+        canvas.style.width = "100%";
+        canvas.style.height = "100%";
+      }
+      window.addEventListener('resize', resizeCanvas);
+      resizeCanvas();
+
+      loadingBar.style.display = "block";
+
+      // Load the Unity loader
+      const script = document.createElement("script");
+      script.src = loaderUrl;
+      script.onload = () => {
+        createUnityInstance(canvas, config, (progress) => {
+          progressBarFull.style.width = (100 * progress) + "%";
+        }).then((unityInstance) => {
+          loadingBar.style.display = "none";
+          fullscreenBtn.onclick = () => unityInstance.SetFullscreen(1);
+
+          // Helpful: show context lost errors instead of silent crashes
+          canvas.addEventListener("webglcontextlost", (e) => {
+            e.preventDefault();
+            unityShowBanner("WebGL context lost. The page may be out of memory. Try reloading.", "error");
+          }, false);
+        }).catch((message) => {
+          // Surfaces common mobile issues (e.g., missing COOP/COEP when Threads are enabled)
+          unityShowBanner(message, "error");
+        });
+      };
+      script.onerror = () => {
         unityShowBanner("Failed to load the Unity loader script.", "error");
       };
       document.body.appendChild(script);
