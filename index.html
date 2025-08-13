@@ -87,7 +87,7 @@
 
       // Tokenized build file names — Unity fills these at build time
       const buildUrl  = "Build";
-      const loaderUrl = buildUrl + "/Brotli.loader.js";
+      const loaderUrl = buildUrl + "/BusDemo(Gzip).loader.js";
 
       // Cap DPR for sharpness without blowing up memory on phones
       const rawDPR = window.devicePixelRatio || 1;
@@ -95,9 +95,9 @@
 
       const config = {
         arguments: [],
-        dataUrl:      buildUrl + "/Brotli.data.br",
-        frameworkUrl: buildUrl + "/Brotli.framework.js.br",
-        codeUrl:      buildUrl + "/Brotli.wasm.br",
+        dataUrl:      buildUrl + "/BusDemo(Gzip).data.unityweb",
+        frameworkUrl: buildUrl + "/BusDemo(Gzip).framework.js.unityweb",
+        codeUrl:      buildUrl + "/BusDemo(Gzip).wasm.unityweb",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "JB Communications LTD",
         productName: "WebGL Demo",
